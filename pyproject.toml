@@ -1,0 +1,31 @@
+[project]
+name = "library-api"
+version = "0.1.0"
+description = "REST API для управления библиотекой"
+authors = [
+    { name = "Maksim Pestov", email = "moikry@mail.ru" }
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "django (>=5.2.6,<6.0.0)",
+    "djangorestframework (>=3.16.1,<4.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "gunicorn (>=23.0.0,<24.0.0)",
+    "drf-spectacular (>=0.28.0,<0.29.0)",
+    "django-filter (>=25.1,<26.0)",
+    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.0"
+flake8 = "^7.0.0"
+isort = "^5.12.0"

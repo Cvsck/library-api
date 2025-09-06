@@ -1,0 +1,50 @@
+# 🔒 Конфиденциальные файлы
+.env
+.env.*
+
+# 🐍 Виртуальное окружение
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 📦 Poetry
+poetry.lock
+
+# 🐘 PostgreSQL
+*.sqlite3
+*.db
+
+# 🧪 Тесты и покрытия
+htmlcov/
+.coverage
+coverage.xml
+*.log
+
+# 🐳 Docker
+*.pid
+*.seed
+*.bak
+*.swp
+docker-compose.override.yml
+
+# 📂 Django
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# 🧠 IDE и редакторы
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 📦 Node.js (если используешь фронт)
+node_modules/
+*.tsbuildinfo
+
+# 🧼 Миграции (если хочешь игнорировать временные)
+**/migrations/*.pyc
+**/migrations/__pycache__/
