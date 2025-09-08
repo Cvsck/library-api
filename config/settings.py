@@ -71,10 +71,11 @@ DATABASES = {
         "NAME": os.getenv("DB_NAME"),
         "USER": os.getenv("DB_USER"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "HOST": os.getenv("DB_HOST", "db"),
+        "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
+
 
 # Email
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -96,10 +97,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Интернационализация
-LANGUAGE_CODE = "ru-ru"
+LANGUAGE_CODE = "ru"
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
 
 # Статика
 STATIC_URL = "static/"
@@ -121,7 +124,7 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Library API",
-    "DESCRIPTION": "REST API для управления библиотекой",
+    "DESCRIPTION": "API для управления библиотекой, авторизацией и пользователями.",
     "VERSION": "1.0.0",
 }
 

@@ -73,3 +73,17 @@ class IssueBookSerializer(serializers.ModelSerializer):
         model = IssueBook
         fields = "__all__"
         read_only_fields = ["user", "issued_at"]
+
+
+class BookShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = ["id", "title", "isbn"]
+
+
+class MyIssueBookSerializer(serializers.ModelSerializer):
+    book = BookShortSerializer()
+
+    class Meta:
+        model = IssueBook
+        fields = ["id", "book", "issued_at", "returned_at"]

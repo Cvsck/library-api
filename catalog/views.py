@@ -2,14 +2,23 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.mixins import ListModelMixin
 
 from catalog.models import Author, Book, Genre, IssueBook
-from catalog.serializers import (AuthorSerializer, BookReadSerializer,
-                                 BookWriteSerializer, GenreSerializer,
-                                 IssueBookSerializer, RegisterSerializer)
+from catalog.serializers import (
+    AuthorSerializer,
+    BookReadSerializer,
+    BookWriteSerializer,
+    GenreSerializer,
+    IssueBookSerializer,
+    RegisterSerializer,
+    MyIssueBookSerializer,
+)
 
 
 # -------------------------------
@@ -92,7 +101,9 @@ class AuthorViewSet(viewsets.ModelViewSet):
         responses={200: GenreSerializer},
     ),
     destroy=extend_schema(
-        summary="Удалить жанр", description="Удаляет жанр по ID.", responses={204: None}
+        summary="Удалить жанр",
+        description="Удаляет жанр по ID.",
+        responses={204: None},
     ),
 )
 class GenreViewSet(viewsets.ModelViewSet):
@@ -172,6 +183,16 @@ class BookViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
+# -------------------------------
+# RegisterView — регистрация пользователя
+# -------------------------------
+@extend_schema(
+    summary="Регистрация пользователя",
+    description="Создаёт нового пользователя по email и паролю.",
+    request=RegisterSerializer,
+    responses={201: RegisterSerializer},
+    tags=["Пользователь"],
+)
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -181,10 +202,77 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=400)
 
 
+# -------------------------------
+# IssueBookViewSet — управление выдачами
+# -------------------------------
+@extend_schema_view(
+    list=extend_schema(
+        summary="Список всех выдач",
+        description="Возвращает все записи о выдаче книг. Доступно авторизованным пользователям.",
+        responses={200: IssueBookSerializer(many=True)},
+    ),
+    retrieve=extend_schema(
+        summary="Получить выдачу по ID",
+        description="Возвращает одну запись о выдаче книги по её идентификатору.",
+        responses={200: IssueBookSerializer},
+    ),
+    create=extend_schema(
+        summary="Создать выдачу книги",
+        description="Создаёт новую запись о выдаче книги. Доступно только администраторам.",
+        request=IssueBookSerializer,
+        responses={201: IssueBookSerializer},
+    ),
+    update=extend_schema(
+        summary="Обновить выдачу",
+        description="Полное обновление записи о выдаче. Только для администраторов.",
+        request=IssueBookSerializer,
+        responses={200: IssueBookSerializer},
+    ),
+    partial_update=extend_schema(
+        summary="Частично обновить выдачу",
+        description="Обновление отдельных полей записи о выдаче. Только для администраторов.",
+        request=IssueBookSerializer,
+        responses={200: IssueBookSerializer},
+    ),
+    destroy=extend_schema(
+        summary="Удалить выдачу",
+        description="Удаляет запись о выдаче книги. Только для администраторов.",
+        responses={204: None},
+    ),
+)
 class IssueBookViewSet(viewsets.ModelViewSet):
     queryset = IssueBook.objects.all()
     serializer_class = IssueBookSerializer
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+# -------------------------------
+# MyIssuedBooksViewSet — мои выдачи
+# -------------------------------
+@extend_schema_view(
+    list=extend_schema(
+        summary="Мои выданные книги",
+        description="Список книг, выданных текущему пользователю.",
+        responses={200: MyIssueBookSerializer(many=True)},
+        tags=["Выдачи пользователя"],
+    )
+)
+class MyIssuedBooksViewSet(ListModelMixin, GenericViewSet):
+    serializer_class = MyIssueBookSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return IssueBook.objects.none()
+        return (
+            IssueBook.objects.filter(user=self.request.user)
+            .select_related("book", "book__author")
+            .prefetch_related("book__genres")
+        )
