@@ -17,7 +17,21 @@ User = get_user_model()
     tags=["Пользователь"],
 )
 class LoginView(APIView):
-    def post(self, request):
+    """View для аутентификации пользователя.
+
+    Принимает email и пароль, возвращает JWT токены при успешной аутентификации.
+    """
+
+    @staticmethod
+    def post(request):
+        """Обрабатывает POST запрос для аутентификации.
+
+        Args:
+            request: HTTP запрос с данными аутентификации
+
+        Returns:
+            Response: 200 с JWT токенами при успехе, 400 с ошибками при неудаче
+        """
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             return Response(serializer.validated_data, status=200)
@@ -31,8 +45,19 @@ class LoginView(APIView):
     tags=["Пользователь"],
 )
 class ProfileView(RetrieveAPIView):
+    """View для получения профиля текущего аутентифицированного пользователя.
+
+    Предоставляет информацию о пользователе: email, статус аккаунта и права доступа.
+    Требует аутентификации через JWT токен.
+    """
+
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
+        """Возвращает объект текущего пользователя.
+
+        Returns:
+            User: Объект аутентифицированного пользователя
+        """
         return self.request.user

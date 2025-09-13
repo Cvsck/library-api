@@ -1,10 +1,13 @@
 from datetime import timedelta
 
+from django.db.models import Count, Q
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
+from rest_framework.decorators import action, api_view
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -189,6 +192,25 @@ class BookViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
+    @extend_schema(
+        summary="Расширенный поиск книг",
+        description="Полнотекстовый поиск по названию, автору и жанрам",
+        tags=["Книги"],
+    )
+    @action(detail=False, methods=["get"])
+    def search(self, request):
+        query = request.query_params.get("q", "")
+
+        books = Book.objects.filter(
+            Q(title__icontains=query)
+            | Q(author__name__icontains=query)
+            | Q(genres__name__icontains=query)
+        ).distinct()
+
+        page = self.paginate_queryset(books)
+        serializer = BookReadSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
 
 # -------------------------------
 # RegisterView — регистрация пользователя
@@ -284,3 +306,68 @@ class MyIssuedBooksViewSet(ListModelMixin, GenericViewSet):
             .select_related("book", "book__author")
             .prefetch_related("book__genres")
         )
+
+
+# -------------------------------
+# Аналитика и статистика
+# -------------------------------
+@extend_schema(
+    summary="Статистика популярности книг",
+    description="Возвращает статистику по самым популярным книгам и авторам",
+    tags=["Аналитика"],
+)
+@api_view(["GET"])
+def book_statistics(request):
+    # Самые популярные книги
+    popular_books = Book.objects.annotate(issue_count=Count("issuebook")).order_by(
+        "-issue_count"
+    )[:10]
+
+    # Самые популярные авторы
+    popular_authors = Author.objects.annotate(
+        book_count=Count("books"), total_issues=Count("books__issuebook")
+    ).order_by("-total_issues")[:10]
+
+    # Книги, которые сейчас выданы
+    currently_issued = IssueBook.objects.filter(returned_at__isnull=True).count()
+
+    # Просроченные книги
+    overdue_books = IssueBook.objects.filter(
+        returned_at__isnull=True, return_due__lt=timezone.now().date()
+    ).count()
+
+    return Response(
+        {
+            "popular_books": [
+                {"title": book.title, "issue_count": book.issue_count}
+                for book in popular_books
+            ],
+            "popular_authors": [
+                {"name": author.name, "total_issues": author.total_issues}
+                for author in popular_authors
+            ],
+            "currently_issued": currently_issued,
+            "overdue_books": overdue_books,
+        }
+    )
+
+
+@extend_schema(
+    summary="Выдачи по диапазону дат",
+    description="Фильтрация выдач по периоду",
+    tags=["Аналитика"],
+)
+@api_view(["GET"])
+def issues_by_date_range(request):
+    start_date = request.query_params.get("start_date")
+    end_date = request.query_params.get("end_date")
+
+    issues = IssueBook.objects.all()
+
+    if start_date:
+        issues = issues.filter(issued_at__gte=start_date)
+    if end_date:
+        issues = issues.filter(issued_at__lte=end_date)
+
+    serializer = IssueBookSerializer(issues, many=True)
+    return Response(serializer.data)
