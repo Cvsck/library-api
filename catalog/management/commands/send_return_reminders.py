@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -41,34 +42,30 @@ class Command(BaseCommand):
             subject = (
                 f'Напоминание: верните книгу "{issue.book.title}" до {issue.return_due}'
             )
-            message = f"""
-            Уважаемый {issue.user.email},
+            message = f"""Уважаемый {issue.user.email},
 
-            Напоминаем, что книга "{issue.book.title}" должна быть возвращена до {issue.return_due}.
-            Осталось 3 дня!
+Напоминаем, что книга "{issue.book.title}" должна быть возвращена до {issue.return_due}.
+Осталось 3 дня!
 
-            С уважением,
-            Библиотека
-            """
+С уважением,
+Библиотека"""
         else:
             days_overdue = (timezone.now().date() - issue.return_due).days
             subject = (
                 f'СРОЧНО: книга "{issue.book.title}" просрочена на {days_overdue} дней!'
             )
-            message = f"""
-            Уважаемый {issue.user.email},
+            message = f"""Уважаемый {issue.user.email},
 
-            Книга "{issue.book.title}" просрочена на {days_overdue} дней!
-            Пожалуйста, верните книгу как можно скорее.
+Книга "{issue.book.title}" просрочена на {days_overdue} дней!
+Пожалуйста, верните книгу как можно скорее.
 
-            С уважением, 
-            Библиотека
-            """
+С уважением, 
+Библиотека"""
 
         send_mail(
             subject,
             message,
-            "noreply@library.com",
+            settings.DEFAULT_FROM_EMAIL,  # Используем настройки из settings.py
             [issue.user.email],
             fail_silently=False,
         )
