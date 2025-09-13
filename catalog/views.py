@@ -1,24 +1,22 @@
+from datetime import timedelta
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.mixins import ListModelMixin
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin
 
 from catalog.models import Author, Book, Genre, IssueBook
-from catalog.serializers import (
-    AuthorSerializer,
-    BookReadSerializer,
-    BookWriteSerializer,
-    GenreSerializer,
-    IssueBookSerializer,
-    RegisterSerializer,
-    MyIssueBookSerializer,
-)
+from catalog.serializers import (AuthorSerializer, BookReadSerializer,
+                                 BookWriteSerializer, GenreSerializer,
+                                 IssueBookSerializer, MyIssueBookSerializer,
+                                 RegisterSerializer)
 
 
 # -------------------------------
@@ -67,6 +65,10 @@ class AuthorViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name"]
     ordering = ["name"]
 
+    @method_decorator(cache_page(60 * 15))  # Кеш на 15 минут
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 # -------------------------------
 # GenreViewSet — управление жанрами
@@ -114,6 +116,10 @@ class GenreViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name"]
     ordering = ["name"]
 
+    @method_decorator(cache_page(60 * 15))  # Кеш на 15 минут
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 # -------------------------------
 # BookViewSet — управление книгами
@@ -131,6 +137,7 @@ class BookViewSet(viewsets.ModelViewSet):
             return BookReadSerializer
         return BookWriteSerializer
 
+    @method_decorator(cache_page(60 * 5))  # Кеш на 5 минут
     @extend_schema(
         summary="Список книг",
         description="Получить все книги с авторами и жанрами. Поддерживает фильтрацию и поиск.",
@@ -249,8 +256,9 @@ class IssueBookViewSet(viewsets.ModelViewSet):
             return [IsAdminUser()]
         return [IsAuthenticated()]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    # Убираем автоматическую привязку к текущему пользователю
+    # def perform_create(self, serializer):
+    #     serializer.save(user=self.request.user)
 
 
 # -------------------------------

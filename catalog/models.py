@@ -26,6 +26,11 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+    # Добавлено свойство для подсчета книг
+    @property
+    def books_count(self):
+        return self.books.count()
+
 
 class Book(models.Model):
     title = models.CharField("Название", max_length=200)

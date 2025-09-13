@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -69,10 +69,27 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class IssueBookSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=True, label="Пользователь"
+    )
+    days_remaining = serializers.SerializerMethodField()
+
     class Meta:
         model = IssueBook
         fields = "__all__"
-        read_only_fields = ["user", "issued_at"]
+        read_only_fields = ["issued_at"]
+
+    def get_days_remaining(self, obj):
+        if obj.returned_at:
+            return 0
+        return (obj.return_due - date.today()).days
+
+    def validate_return_due(self, value):
+        if value < date.today():
+            raise serializers.ValidationError("Дата возврата не может быть в прошлом")
+        if value > date.today() + timedelta(days=365):
+            raise serializers.ValidationError("Выдача не может быть более чем на 1 год")
+        return value
 
 
 class BookShortSerializer(serializers.ModelSerializer):
@@ -83,7 +100,20 @@ class BookShortSerializer(serializers.ModelSerializer):
 
 class MyIssueBookSerializer(serializers.ModelSerializer):
     book = BookShortSerializer()
+    days_remaining = serializers.SerializerMethodField()
 
     class Meta:
         model = IssueBook
-        fields = ["id", "book", "issued_at", "returned_at"]
+        fields = [
+            "id",
+            "book",
+            "issued_at",
+            "return_due",
+            "returned_at",
+            "days_remaining",
+        ]
+
+    def get_days_remaining(self, obj):
+        if obj.returned_at:
+            return 0
+        return (obj.return_due - date.today()).days

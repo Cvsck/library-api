@@ -15,8 +15,10 @@ dependencies = [
     "gunicorn (>=23.0.0,<24.0.0)",
     "drf-spectacular (>=0.28.0,<0.29.0)",
     "django-filter (>=25.1,<26.0)",
-    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)"
+    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)",
+    "whitenoise (>=6.6.0,<7.0.0)"
 ]
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

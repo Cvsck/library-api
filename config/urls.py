@@ -2,12 +2,9 @@
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
-
 # 🔐 JWT-аутентификация
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
 # 🌐 Основные маршруты
 urlpatterns = [
@@ -23,11 +20,9 @@ urlpatterns = [
 
 # 🧪 Swagger и Redoc — только в режиме DEBUG
 if settings.DEBUG:
-    from drf_spectacular.views import (
-        SpectacularAPIView,
-        SpectacularSwaggerView,
-        SpectacularRedocView,
-    )
+    from drf_spectacular.views import (SpectacularAPIView,
+                                       SpectacularRedocView,
+                                       SpectacularSwaggerView)
 
     urlpatterns += [
         # 📄 Сырая OpenAPI-схема
